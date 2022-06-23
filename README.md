@@ -22,5 +22,5 @@ bwrapwrap --bind hello /hello
 Install instructions:
 
 ```
-curl -Lfs ... | cc -o bwrapwrap -x c -
+curl -Lfs https://raw.githubusercontent.com/haampie/bwrapwrap/master/bwrapwrap.c| cc -o bwrapwrap -x c -
 ```
