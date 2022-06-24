@@ -17,7 +17,7 @@ squashfs-run: squashfs-run.o
 	$(CC) $< $(LDFLAGS) -o $@
 
 install: squashfs-run
-	mkdir -p $(DESTDIR)$
+	mkdir -p $(DESTDIR)$(bindir)
 	cp -p squashfs-run $(DESTDIR)$(bindir)
 
 clean:
