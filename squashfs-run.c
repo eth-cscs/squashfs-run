@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
   push_arg(&args, tmp_dir);
   push_arg(&args, tgt_prefix);
 
-  for (int i = 1; i < argc; ++i)
+  for (int i = 2; i < argc; ++i)
     push_arg(&args, argv[i]);
 
   push_arg(&args, NULL);
