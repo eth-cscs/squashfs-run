@@ -1,26 +1,13 @@
-# bwrap wrapper to add root-level mount
+# squashfs-run
 
-`bwrap` is nice, but would be even nicer if it allowed you to conveniently add
-a new root level directory to the current filesystem.
+A small utility around `squashfs-mount` and `bwrap` that runs a command with
+squashfs file mounted directly under `/`.
 
-The problem is `bwrap --dev-bind / / --bind hello /hello` does not work,
-because it binds `hello` only after `/` is already bound, meaning that `mkdir
-/hello` fails with permission problems.
+The squashsfs file should be prepended with an absolute path `/mount-point`
+followed by `\0`s padded to 4096 bytes.
 
-The alternative is to own the new root, and bind the old root's dir entries directly:
+Then `squashfs-run file.squashfs [command...]` will:
 
-```
-bwrap --dev-bind /bin /bin --dev-bind /usr /usr ... --bind hello /hello
-```
+1. First mount the squashfs file in `/tmp` through `squashfs-mount`.
+2. Then use `bwrap` to bind it to the provided path in the metada.
 
-But this is a pain, so instead `bwrapwrap` does this, so you can simply write:
-
-```
-bwrapwrap --bind hello /hello
-```
-
-Install instructions:
-
-```
-curl -Lfs https://raw.githubusercontent.com/haampie/bwrapwrap/master/bwrapwrap.c| cc -o bwrapwrap -x c -
-```

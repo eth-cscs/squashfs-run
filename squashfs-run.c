@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809
+
 #include <alloca.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -5,16 +7,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#define HEADER_SIZE 4096
+
 #define exit_with_error(str)                                                   \
   do {                                                                         \
-    fputs(str, stderr);                                                        \
+    fputs(str "\n", stderr);                                                   \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
-
-/** this utility is almost equivalent to `bwrap --dev-bind / / args...`, except
- * that it --dev-binds the direct children of / so that another root-level
- * directory can be added added: bwrapwrap --bind example /example.
- **/
 
 struct args_t {
   char **args;
@@ -24,7 +23,7 @@ struct args_t {
 
 static void init_args(struct args_t *args) {
   args->size = 0;
-  args->capacity = 6;
+  args->capacity = 10;
   args->args = malloc(args->capacity * sizeof(char *));
 }
 
@@ -39,11 +38,45 @@ static void push_arg(struct args_t *args, char *p) {
 }
 
 int main(int argc, char **argv) {
+  char tmp_dir[] = "/tmp/squashfs-mnt-XXXXXX";
+
   struct args_t args;
+  if (argc < 3) {
+    fputs("Usage: ", stderr);
+    fputs(argv[0], stderr);
+    fputs(" <squashfs file> <command> [args...]\n\n "
+          " Set SQUASHFS_RUN_DEBUG for dry-run, dumping the effective call.\n",
+          stderr);
+    exit(EXIT_FAILURE);
+  }
+
   init_args(&args);
 
-  char *exe = "bwrap";
-  push_arg(&args, exe);
+  // Assume 4k of metadata just containing the mount path, with the actual
+  // squashfs file appended.
+  FILE *f = fopen(argv[1], "rb");
+
+  char tgt_prefix[HEADER_SIZE];
+  if (fread(&tgt_prefix, HEADER_SIZE, 1, f) != 1)
+    exit_with_error("Invalid squashfs metadata");
+
+  if (tgt_prefix[0] != '/')
+    exit_with_error("Squashfs mount path not absolute");
+
+  if (strchr(tgt_prefix, '\0') == NULL)
+    exit_with_error("Missing end of string of mount path");
+
+  if (mkdtemp(tmp_dir) == NULL)
+    exit_with_error("Failed to create a temporary directory");
+
+  // Setup `squashfs-mount`.
+  push_arg(&args, "squashfs-mount");
+  push_arg(&args, argv[1]);
+  push_arg(&args, tmp_dir);
+  push_arg(&args, "--offset=4096");
+
+  // Setup `bwrap`
+  push_arg(&args, "bwrap");
 
   DIR *folder = opendir("/");
   if (folder == NULL)
@@ -73,9 +106,23 @@ int main(int argc, char **argv) {
   if (closedir(folder) != 0)
     exit_with_error("Could not close /");
 
+  push_arg(&args, "--bind");
+  push_arg(&args, tmp_dir);
+  push_arg(&args, tgt_prefix);
+
   for (int i = 1; i < argc; ++i)
     push_arg(&args, argv[i]);
+
   push_arg(&args, NULL);
 
-  execvp(exe, args.args);
+  if (getenv("SQUASHFS_RUN_DEBUG") != NULL) {
+    for (size_t i = 0; i < args.size - 1; ++i) {
+      fputs(args.args[i], stdout);
+      putchar(' ');
+    }
+    putchar('\n');
+    exit(EXIT_SUCCESS);
+  }
+
+  execvp(args.args[0], args.args);
 }
