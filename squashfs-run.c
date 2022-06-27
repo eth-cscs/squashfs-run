@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#define VERSION "0.2.2"
 #define HEADER_SIZE 4096
 
 #define exit_with_error(str)                                                   \
@@ -41,6 +42,13 @@ int main(int argc, char **argv) {
   char tmp_dir[] = "/tmp/squashfs-mnt-XXXXXX";
 
   struct args_t args;
+
+  if (argc >= 2 &&
+      (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0)) {
+    puts(VERSION);
+    exit(EXIT_SUCCESS);
+  }
+
   if (argc < 3) {
     fputs("Usage: ", stderr);
     fputs(argv[0], stderr);
