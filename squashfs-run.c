@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define VERSION "0.3.0-dev"
 #define HEADER_SIZE 4096
@@ -74,49 +76,61 @@ int main(int argc, char **argv) {
   if (strchr(tgt_prefix, '\0') == NULL)
     exit_with_error("Missing end of string of mount path\n");
 
-  if (mkdtemp(tmp_dir) == NULL)
-    exit_with_error("Failed to create a temporary directory\n");
+  struct stat st;
+  if (lstat(tgt_prefix, &st) == 0) {
+    // If the mountpoint already exists, use it, no need for bwrap.
+    push_arg(&args, "squashfs-mount");
+    push_arg(&args, argv[1]);
+    push_arg(&args, tgt_prefix);
+    push_arg(&args, "--offset=4096");
+  } else {
+    // Otherwise create a temporary dir to mount to, and then bind
+    // it with bwrap to tgt_prefix in a new root.
 
-  // Setup `squashfs-mount`.
-  push_arg(&args, "squashfs-mount");
-  push_arg(&args, argv[1]);
-  push_arg(&args, tmp_dir);
-  push_arg(&args, "--offset=4096");
+    if (mkdtemp(tmp_dir) == NULL)
+      exit_with_error("Failed to create a temporary directory\n");
 
-  // Setup `bwrap`
-  push_arg(&args, "bwrap");
+    // Setup `squashfs-mount`.
+    push_arg(&args, "squashfs-mount");
+    push_arg(&args, argv[1]);
+    push_arg(&args, tmp_dir);
+    push_arg(&args, "--offset=4096");
 
-  DIR *folder = opendir("/");
-  if (folder == NULL)
-    exit_with_error("Could not open /\n");
-  struct dirent *entry;
-  while ((entry = readdir(folder))) {
-    // Skip `.` and `..`
-    if (entry->d_name[0] == '.' &&
-        (entry->d_name[1] == '\0' ||
-         (entry->d_name[1] == '.' && entry->d_name[2] == '\0')))
-      continue;
+    // Setup `bwrap`
+    push_arg(&args, "bwrap");
 
-    // store the `--dev-bind src dst` args
-    size_t len = strlen(entry->d_name) + 2; // slash + name + null
-    char *src = (char *)alloca(len * sizeof(char));
-    char *dst = (char *)alloca(len * sizeof(char));
-    if (src == NULL || dst == NULL)
-      exit_with_error("alloca failed\n");
-    src[0] = '/';
-    dst[0] = '/';
-    memcpy(src + 1, entry->d_name, len + 1); // include the trailing null
-    memcpy(dst + 1, entry->d_name, len + 1);
-    push_arg(&args, "--dev-bind");
-    push_arg(&args, src);
-    push_arg(&args, dst);
+    DIR *folder = opendir("/");
+    if (folder == NULL)
+      exit_with_error("Could not open /\n");
+    struct dirent *entry;
+    while ((entry = readdir(folder))) {
+      // Skip `.` and `..`
+      if (entry->d_name[0] == '.' &&
+          (entry->d_name[1] == '\0' ||
+           (entry->d_name[1] == '.' && entry->d_name[2] == '\0')))
+        continue;
+
+      // store the `--dev-bind src dst` args
+      size_t len = strlen(entry->d_name) + 2; // slash + name + null
+      char *src = (char *)alloca(len * sizeof(char));
+      char *dst = (char *)alloca(len * sizeof(char));
+      if (src == NULL || dst == NULL)
+        exit_with_error("alloca failed\n");
+      src[0] = '/';
+      dst[0] = '/';
+      memcpy(src + 1, entry->d_name, len + 1); // include the trailing null
+      memcpy(dst + 1, entry->d_name, len + 1);
+      push_arg(&args, "--dev-bind");
+      push_arg(&args, src);
+      push_arg(&args, dst);
+    }
+    if (closedir(folder) != 0)
+      exit_with_error("Could not close /\n");
+
+    push_arg(&args, "--bind");
+    push_arg(&args, tmp_dir);
+    push_arg(&args, tgt_prefix);
   }
-  if (closedir(folder) != 0)
-    exit_with_error("Could not close /\n");
-
-  push_arg(&args, "--bind");
-  push_arg(&args, tmp_dir);
-  push_arg(&args, tgt_prefix);
 
   for (int i = 2; i < argc; ++i)
     push_arg(&args, argv[i]);
