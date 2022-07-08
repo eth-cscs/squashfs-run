@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define VERSION "0.2.2"
+#define VERSION "0.2.3-dev"
 #define HEADER_SIZE 4096
 
 #define exit_with_error(str)                                                   \
