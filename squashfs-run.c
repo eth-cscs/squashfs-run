@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #define VERSION "0.3.0-dev"
-#define HEADER_SIZE 4096
 
 #define exit_with_error(...)                                                   \
   do {                                                                         \
@@ -66,26 +65,17 @@ int main(int argc, char **argv) {
   if (f == NULL)
     exit_with_error("Could not open %s\n", argv[1]);
 
-  char tgt_prefix[HEADER_SIZE];
-  if (fread(&tgt_prefix, HEADER_SIZE, 1, f) != 1)
-    exit_with_error("Invalid squashfs metadata\n");
-
-  if (tgt_prefix[0] != '/')
-    exit_with_error("Squashfs mount path not absolute\n");
-
-  if (strchr(tgt_prefix, '\0') == NULL)
-    exit_with_error("Missing end of string of mount path\n");
+  char mountpoint[] = "/user-environment";
 
   struct stat st;
-  if (lstat(tgt_prefix, &st) == 0) {
+  if (lstat(mountpoint, &st) == 0) {
     // If the mountpoint already exists, use it, no need for bwrap.
     push_arg(&args, "squashfs-mount");
     push_arg(&args, argv[1]);
-    push_arg(&args, tgt_prefix);
-    push_arg(&args, "--offset=4096");
+    push_arg(&args, mountpoint);
   } else {
     // Otherwise create a temporary dir to mount to, and then bind
-    // it with bwrap to tgt_prefix in a new root.
+    // it with bwrap to mountpoint in a new root.
 
     if (mkdtemp(tmp_dir) == NULL)
       exit_with_error("Failed to create a temporary directory\n");
@@ -94,7 +84,6 @@ int main(int argc, char **argv) {
     push_arg(&args, "squashfs-mount");
     push_arg(&args, argv[1]);
     push_arg(&args, tmp_dir);
-    push_arg(&args, "--offset=4096");
 
     // Setup `bwrap`
     push_arg(&args, "bwrap");
@@ -129,7 +118,7 @@ int main(int argc, char **argv) {
 
     push_arg(&args, "--bind");
     push_arg(&args, tmp_dir);
-    push_arg(&args, tgt_prefix);
+    push_arg(&args, mountpoint);
   }
 
   for (int i = 2; i < argc; ++i)
