@@ -58,13 +58,6 @@ int main(int argc, char **argv) {
 
   init_args(&args);
 
-  // Assume 4k of metadata just containing the mount path, with the actual
-  // squashfs file appended.
-  FILE *f = fopen(argv[1], "rb");
-
-  if (f == NULL)
-    exit_with_error("Could not open %s\n", argv[1]);
-
   char mountpoint[] = "/user-environment";
 
   struct stat st;
