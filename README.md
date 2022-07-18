@@ -1,13 +1,14 @@
 # squashfs-run
 
 A small utility around `squashfs-mount` and `bwrap` that runs a command with
-squashfs file mounted directly under `/`.
+a squashfs file mounted at `/user-environment`.
 
-The squashsfs file should be prepended with an absolute path `/mount-point`
-followed by `\0`s padded to 4096 bytes.
+Usage: `squashfs-run file.squashfs [command...]`.
 
-Then `squashfs-run file.squashfs [command...]` will:
+If `/user-environment` does not exist as a path, this utility will
 
 1. First mount the squashfs file in `/tmp` through `squashfs-mount`.
-2. Then use `bwrap` to bind it to the provided path in the metada.
+2. Then use `bwrap` to bind it to `/user-environment` in the metada.
+
+Otherwise it mounts to `/user-environment` directly.
 
