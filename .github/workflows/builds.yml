@@ -1,0 +1,16 @@
+name: builds
+on: [push, pull_request]
+
+jobs:
+  makefile:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          sudo make install prefix=install
+      - name: test
+        run: |
+          ./install/bin/squashfs-run --version
+          SQUASHFS_RUN_DEBUG=1 ./install/bin/squashfs-run file.squashfs command
+

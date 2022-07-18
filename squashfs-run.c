@@ -9,8 +9,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define VERSION "0.3.0-dev"
-
 #define exit_with_error(...)                                                   \
   do {                                                                         \
     fprintf(stderr, __VA_ARGS__);                                              \
