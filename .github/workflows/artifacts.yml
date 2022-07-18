@@ -17,9 +17,9 @@ jobs:
       - name: build-srpm
         run: |
           make rpm
-          rpmbuild --rebuild ./rpmbuild/SRPMS/squashfs-run*.src.rpm --define "_topdir $(pwd)/rpmbuild"
-          rpm --install rpmbuild/RPMS/x86_64/squashfs-run*.rpm
-          cp rpmbuild/SRPMS/* .
+          rpmbuild --rebuild ./rpm/SRPMS/squashfs-run*.src.rpm --define "_topdir $(pwd)/rpm"
+          rpm --install rpm/RPMS/x86_64/squashfs-run*.rpm
+          cp rpm/SRPMS/* .
       - name: upload-rpm
         uses: actions/upload-artifact@v3
         with:
