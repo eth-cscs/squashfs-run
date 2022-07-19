@@ -14,7 +14,7 @@ jobs:
           zypper install -y gcc make rpm-build git
       - name: clone
         uses: actions/checkout@v2
-      - name: build-srpm
+      - name: build-rpm
         run: |
           make rpm
           rpmbuild --rebuild "$(find rpm/SRPMS -name '*.rpm' -type f -print -quit)" --define "_topdir $(pwd)/rpm"
