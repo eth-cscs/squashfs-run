@@ -17,8 +17,8 @@ jobs:
       - name: build-srpm
         run: |
           make rpm
-          sudo rpmbuild --rebuild "$(find rpm/SRPMS -name '*.rpm' -type f -print -quit)" --define "_topdir $(pwd)/rpm"
-          sudo rpm --install "$(find rpm/RPMS -name '*.rpm' -type f -print -quit)"
+          rpmbuild --rebuild "$(find rpm/SRPMS -name '*.rpm' -type f -print -quit)" --define "_topdir $(pwd)/rpm"
+          rpm --install "$(find rpm/RPMS -name '*.rpm' -type f -print -quit)"
           find rpm -name '*.rpm' -type f -exec cp {} . \;
       - name: upload-rpm
         uses: actions/upload-artifact@v3
