@@ -2,10 +2,13 @@ Name:           squashfs-run
 Version:        SQUASHFS_RUN_VERSION
 Release:        1%{?dist}
 Summary:        convenience utility to run a command with a squashfs file mounted at /user-environment
+Prefix:         /usr
 
 License:        BSD3
 URL:            https://github.com/eth-cscs/squashfs-run
 Source0:        %{name}-%{version}.tar.gz
+
+%define _build_id_links none
 
 %description
 A convenience utility that runs a command with a squashfs file mounted at /user-environment

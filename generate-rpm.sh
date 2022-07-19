@@ -15,10 +15,7 @@ do
     esac
 done
 
-# Strip `-dev` from VERSION if exsists because RPM requires version numbers of
-# the form X.Y.Z
-# shellcheck disable=SC1003
-version="$(sed 's\-.*$\\' VERSION)"
+version="$(sed s/-/~/ VERSION)"
 pkg_name="squashfs-run-${version}"
 mkdir -p "${build_path}"
 (cd "${build_path}" && mkdir -p SOURCES BUILD RPMS SRPMS SPECS)
